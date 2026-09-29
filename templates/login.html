@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Masuk — {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="auth-card">
+        <div class="auth-brand">
+            <span class="brand-mark"><i class="fa-solid fa-feather-pointed"></i></span>
+            <h1>Masuk</h1>
+            <p class="muted">Akses dashboard {{ site_name }}</p>
+        </div>
+
+        {% if error %}
+        <div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</div>
+        {% endif %}
+
+        <form method="POST" action="/login" class="auth-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label>
+                <span>Username</span>
+                <input type="text" name="username" required autocomplete="username" placeholder="admin">
+            </label>
+            <label>
+                <span>Password</span>
+                <div class="password-wrap">
+                    <input type="password" name="password" id="login-password" required autocomplete="current-password" placeholder="••••••••">
+                    <button type="button" class="icon-btn" data-toggle-password="login-password" aria-label="Lihat password">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+            </label>
+            <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-right-to-bracket"></i> Masuk</button>
+        </form>
+
+        <p class="auth-footer muted small"><a href="/"><i class="fa-solid fa-arrow-left"></i> Kembali ke beranda</a></p>
+    </div>
+</section>
+{% endblock %}
