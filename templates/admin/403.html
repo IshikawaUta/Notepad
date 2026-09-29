@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% block title %}403 — Akses ditolak{% endblock %}
+{% block content %}
+<div class="error-page">
+    <div class="container">
+        <div class="error-icon" aria-hidden="true"><i class="fa-solid fa-lock"></i></div>
+        <div class="error-code">403</div>
+        <h1>Akses ditolak</h1>
+        <p class="muted">Anda tidak punya izin untuk membuka halaman ini.</p>
+        <div class="error-actions">
+            <a href="/admin/" class="btn btn-primary"><i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Dashboard</a>
+            <a href="/" class="btn btn-ghost"><i class="fa-solid fa-house" aria-hidden="true"></i> Beranda</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
