@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{{ site_name }}{% endblock %}</title>
+    <meta name="description" content="{% block meta_description %}{{ site_tagline }}{% endblock %}">
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1e1e1e" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/static/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/static/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="icon" href="/static/favicon-16.png" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <script src="/static/js/theme-init.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    {% block body_start %}{% endblock %}
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="brand" aria-label="{{ site_name }}">
+                <span class="brand-mark"><i class="fa-solid fa-feather-pointed"></i></span>
+                <span class="brand-text">{{ site_name }}</span>
+            </a>
+
+            <nav class="nav-desktop" aria-label="Navigasi utama">
+                <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">Beranda</a>
+                {% if user %}
+                <a href="/admin/" class="nav-link">Dashboard</a>
+                {% else %}
+                <a href="/login" class="nav-link {% if request.path == '/login' %}active{% endif %}">Masuk</a>
+                {% endif %}
+            </nav>
+
+            <div class="header-actions">
+                <form class="search-form" action="/" method="get" role="search">
+                    <input type="search" name="q" value="{{ q or '' }}" placeholder="Cari catatan…" aria-label="Cari">
+                    <button type="submit" aria-label="Cari"><i class="fa-solid fa-magnifying-glass"></i></button>
+                </form>
+                <button type="button" class="icon-btn" id="theme-toggle" aria-label="Ganti tema" title="Ganti tema">
+                    <i class="fa-solid fa-moon" id="theme-icon"></i>
+                </button>
+                <button type="button" class="icon-btn nav-toggle" id="nav-toggle" aria-label="Buka menu" aria-expanded="false" aria-controls="nav-mobile">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        <nav class="nav-mobile" id="nav-mobile" hidden aria-label="Navigasi mobile">
+            <form class="search-form" action="/" method="get" role="search">
+                <input type="search" name="q" value="{{ q or '' }}" placeholder="Cari catatan…" aria-label="Cari">
+                <button type="submit" aria-label="Cari"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </form>
+            <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}"><i class="fa-solid fa-house"></i> Beranda</a>
+            {% if user %}
+            <a href="/admin/" class="nav-link {% if request.path in ('/admin', '/admin/') %}active{% endif %}"><i class="fa-solid fa-gauge-high"></i> Dashboard</a>
+            <a href="/admin/catatan" class="nav-link {% if '/admin/catatan' in request.path %}active{% endif %}"><i class="fa-regular fa-note-sticky"></i> Kelola Catatan</a>
+            <a href="/admin/kategori" class="nav-link {% if '/admin/kategori' in request.path %}active{% endif %}"><i class="fa-solid fa-tags"></i> Kategori</a>
+            <a href="/admin/profil" class="nav-link {% if '/admin/profil' in request.path %}active{% endif %}"><i class="fa-solid fa-user-gear"></i> Profil</a>
+            {% else %}
+            <a href="/login" class="nav-link {% if request.path == '/login' %}active{% endif %}"><i class="fa-solid fa-right-to-bracket"></i> Masuk</a>
+            {% endif %}
+            <div class="nav-mobile-divider"></div>
+            <a href="/feed.xml" class="nav-link"><i class="fa-solid fa-rss"></i> RSS</a>
+            <a href="/sitemap.xml" class="nav-link"><i class="fa-solid fa-sitemap"></i> Sitemap</a>
+        </nav>
+    </header>
+
+    <main class="site-main">
+        {% if csrf_error %}
+        <div class="container">
+            <div class="alert alert-warn"><i class="fa-solid fa-triangle-exclamation"></i> Token keamanan kedaluwarsa. Silakan coba lagi.</div>
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div>
+                <strong>{{ site_name }}</strong>
+                <p class="muted">{{ site_tagline }}</p>
+            </div>
+            <div class="footer-links">
+                <a href="/feed.xml"><i class="fa-solid fa-rss"></i> RSS</a>
+                <a href="/sitemap.xml"><i class="fa-solid fa-sitemap"></i> Sitemap</a>
+                {% if not user %}
+                <a href="/login"><i class="fa-solid fa-lock"></i> Masuk</a>
+                {% endif %}
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/js/main.js" defer></script>
+    <script src="/static/js/load-assets.js" defer></script>
+    {% block extra_script %}{% endblock %}
+</body>
+</html>
