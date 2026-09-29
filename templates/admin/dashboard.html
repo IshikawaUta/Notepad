@@ -1,0 +1,95 @@
+{% extends "admin/base.html" %}
+{% block title %}Dashboard — {{ site_name }}{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Dashboard</h1>
+        <p class="muted">Selamat datang, {{ user.name if user else 'Admin' }}</p>
+    </div>
+    <a href="/admin/catatan/tambah" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tulis Catatan</a>
+</div>
+
+<div class="stat-grid">
+    <div class="stat-card">
+        <div class="stat-icon"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="stat-value">{{ stats.total }}</div>
+        <div class="stat-label">Total catatan</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green"><i class="fa-solid fa-globe"></i></div>
+        <div class="stat-value">{{ stats.published }}</div>
+        <div class="stat-label">Terbit</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon amber"><i class="fa-solid fa-file-pen"></i></div>
+        <div class="stat-value">{{ stats.draft }}</div>
+        <div class="stat-label">Draf</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon red"><i class="fa-solid fa-box-archive"></i></div>
+        <div class="stat-value">{{ stats.archived }}</div>
+        <div class="stat-label">Arsip</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon blue"><i class="fa-solid fa-eye"></i></div>
+        <div class="stat-value">{{ stats.views }}</div>
+        <div class="stat-label">Total views</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple"><i class="fa-solid fa-tags"></i></div>
+        <div class="stat-value">{{ stats.categories }}</div>
+        <div class="stat-label">Kategori</div>
+    </div>
+</div>
+
+<div class="grid-2">
+    <section class="panel">
+        <div class="panel-head">
+            <h2 class="panel-title">Terbaru diubah</h2>
+            <a href="/admin/catatan" class="btn btn-ghost btn-sm">Semua</a>
+        </div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Judul</th><th>Status</th><th>Diperbarui</th></tr>
+                </thead>
+                <tbody>
+                    {% for n in stats.recent %}
+                    <tr>
+                        <td><a href="/admin/catatan/{{ n._id }}/edit">{{ n.title }}</a></td>
+                        <td><span class="pill pill-{{ n.status }}">{{ n.status }}</span></td>
+                        <td class="muted small">{{ format_date(n.updated_at) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="3" class="muted">Belum ada catatan.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head">
+            <h2 class="panel-title">Paling banyak dilihat</h2>
+        </div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Judul</th><th>Views</th></tr>
+                </thead>
+                <tbody>
+                    {% for n in stats.top %}
+                    <tr>
+                        <td><a href="/admin/catatan/{{ n._id }}/edit">{{ n.title }}</a></td>
+                        <td>{{ n.views or 0 }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="2" class="muted">Belum ada data.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}
