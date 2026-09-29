@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}{{ note.title }} — {{ site_name }}{% endblock %}
+{% block meta_description %}{{ note.excerpt or site_tagline }}{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ note_url }}">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="{{ site_name }}">
+<meta property="og:locale" content="id_ID">
+<meta property="og:title" content="{{ note.title }}">
+<meta property="og:description" content="{{ note.excerpt or site_tagline }}">
+<meta property="og:url" content="{{ note_url }}">
+{% if og_image %}
+<meta property="og:image" content="{{ og_image }}">
+{% endif %}
+<meta name="twitter:card" content="{{ 'summary_large_image' if og_image else 'summary' }}">
+<meta name="twitter:title" content="{{ note.title }}">
+<meta name="twitter:description" content="{{ note.excerpt or site_tagline }}">
+{% if og_image %}
+<meta name="twitter:image" content="{{ og_image }}">
+{% endif %}
+<script type="application/ld+json">{{ jsonld_json | safe }}</script>
+{% endblock %}
+
+{% block content %}
+<article class="container note-layout">
+    <header class="note-header">
+        <div class="card-meta">
+            {% if category %}
+            <a class="badge" style="--badge:{{ category.color or '#6366f1' }}" href="/?kategori={{ category.slug }}">{{ category.name }}</a>
+            {% endif %}
+            <span><i class="fa-regular fa-calendar"></i> {{ format_date(note.published_at or note.created_at) }}</span>
+            <span><i class="fa-regular fa-clock"></i> {{ note.reading_minutes or 1 }} menit baca</span>
+            <span><i class="fa-regular fa-eye"></i> {{ note.views or 0 }}x</span>
+            {% if note.word_count %}<span>{{ note.word_count }} kata</span>{% endif %}
+        </div>
+        <h1>{{ note.title }}</h1>
+        {% if note.tags %}
+        <div class="tags wrap">
+            {% for t in note.tags %}<a class="tag" href="/tag/{{ t | urlencode }}">#{{ t }}</a>{% endfor %}
+        </div>
+        {% endif %}
+    </header>
+
+    <div class="note-content prose">
+        {{ note.content_html | safe }}
+    </div>
+
+    <footer class="note-footer">
+        <div class="share-bar" aria-label="Bagikan catatan">
+            <span class="share-label"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i> Bagikan</span>
+            <a class="share-btn" href="https://twitter.com/intent/tweet?text={{ note.title | urlencode }}&url={{ note_url | urlencode }}"
+               target="_blank" rel="noopener noreferrer" title="Bagikan ke X" aria-label="Bagikan ke X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+            <a class="share-btn" href="https://www.facebook.com/sharer/sharer.php?u={{ note_url | urlencode }}"
+               target="_blank" rel="noopener noreferrer" title="Bagikan ke Facebook" aria-label="Bagikan ke Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+            <a class="share-btn" href="https://wa.me/?text={{ (note.title ~ ' ' ~ note_url) | urlencode }}"
+               target="_blank" rel="noopener noreferrer" title="Bagikan ke WhatsApp" aria-label="Bagikan ke WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+            <a class="share-btn" href="https://t.me/share/url?url={{ note_url | urlencode }}&text={{ note.title | urlencode }}"
+               target="_blank" rel="noopener noreferrer" title="Bagikan ke Telegram" aria-label="Bagikan ke Telegram"><i class="fa-brands fa-telegram" aria-hidden="true"></i></a>
+            <button type="button" class="share-btn" id="share-native" hidden title="Bagikan" aria-label="Bagikan"><i class="fa-solid fa-share-from-square" aria-hidden="true"></i></button>
+            <button type="button" class="share-btn" data-copy-link title="Salin tautan" aria-label="Salin tautan">
+                <i class="fa-solid fa-link" aria-hidden="true"></i><span class="share-copy-label">Salin tautan</span>
+            </button>
+            <a class="share-btn" href="/catatan/{{ note.slug }}/unduh" title="Unduh markdown" aria-label="Unduh markdown"><i class="fa-solid fa-download" aria-hidden="true"></i></a>
+        </div>
+        {% if note.status and note.status != 'published' %}
+        <div class="alert alert-warn"><i class="fa-solid fa-eye-slash"></i> Catatan ini berstatus <strong>{{ note.status }}</strong> dan tidak tampil di halaman utama.</div>
+        {% endif %}
+        {% if user %}
+        <div class="note-admin-actions">
+            <a class="btn btn-ghost btn-sm" href="/admin/catatan/{{ note._id }}/edit"><i class="fa-solid fa-pen"></i> Edit</a>
+        </div>
+        {% endif %}
+    </footer>
+</article>
+
+{% if related %}
+<section class="container related">
+    <h2 class="section-title">Catatan terkait</h2>
+    <div class="card-grid">
+        {% for r in related %}
+        <article class="card note-card">
+            <div class="card-body">
+                <div class="card-meta">
+                    <span>{{ format_date(r.published_at or r.created_at) }}</span>
+                    <span><i class="fa-regular fa-eye"></i> {{ r.views or 0 }}</span>
+                </div>
+                <h3 class="card-title"><a href="/catatan/{{ r.slug }}">{{ r.title }}</a></h3>
+                <p class="card-excerpt">{{ r.excerpt or '' }}</p>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if other_notes %}
+<section class="container related">
+    <h2 class="section-title">Catatan Lainnya</h2>
+    <div class="card-grid">
+        {% for r in other_notes %}
+        <article class="card note-card">
+            <div class="card-body">
+                <div class="card-meta">
+                    <span>{{ format_date(r.published_at or r.created_at) }}</span>
+                    <span><i class="fa-regular fa-eye"></i> {{ r.views or 0 }}</span>
+                </div>
+                <h3 class="card-title"><a href="/catatan/{{ r.slug }}">{{ r.title }}</a></h3>
+                <p class="card-excerpt">{{ r.excerpt or '' }}</p>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}
