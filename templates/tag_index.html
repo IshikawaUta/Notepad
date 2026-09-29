@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Tag — {{ site_name }}{% endblock %}
+{% block meta_description %}Semua tag catatan di {{ site_name }}.{% endblock %}
+
+{% block extra_head %}
+<link rel="canonical" href="{{ request.path }}">
+{% endblock %}
+
+{% block content %}
+<section class="container" style="padding-top:1.5rem;padding-bottom:3rem">
+    <div class="page-head">
+        <div>
+            <h1><i class="fa-solid fa-tags"></i> Tag</h1>
+            <p class="muted">{{ tag_rows|length }} tag digunakan pada catatan.</p>
+        </div>
+    </div>
+
+    {% if tag_rows %}
+    <div class="tags wrap tag-index-list">
+        {% for r in tag_rows %}
+        <a class="tag tag-lg" href="/tag/{{ r.tag | urlencode }}">#{{ r.tag }} <span class="count">{{ r.count }}</span></a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fa-solid fa-tags"></i>
+        <p>Belum ada tag.</p>
+        <a href="/" class="btn btn-ghost">Ke beranda</a>
+    </div>
+    {% endif %}
+</section>
+{% endblock %}
