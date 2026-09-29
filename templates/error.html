@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}{{ error_code }} — {{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="error-page">
+    <div class="container">
+        <div class="error-icon" aria-hidden="true">
+            <i class="fa-solid {% if error_code == 404 %}fa-map-location-dot{% elif error_code == 403 %}fa-lock{% else %}fa-triangle-exclamation{% endif %}"></i>
+        </div>
+        <div class="error-code">{{ error_code }}</div>
+        <h1>{{ error_message or 'Terjadi kesalahan' }}</h1>
+        <p class="muted">
+            {% if error_code == 404 %}
+            Halaman yang kamu cari tidak ada atau sudah dipindahkan.
+            {% elif error_code == 403 %}
+            Kamu tidak punya izin untuk membuka halaman ini.
+            {% else %}
+            Silakan coba lagi beberapa saat.
+            {% endif %}
+        </p>
+        <div class="error-actions">
+            <a href="/" class="btn btn-primary"><i class="fa-solid fa-house" aria-hidden="true"></i> Ke Beranda</a>
+            <button type="button" class="btn btn-ghost" data-history-back><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Kembali</button>
+        </div>
+    </div>
+</section>
+{% endblock %}
