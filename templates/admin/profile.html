@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% block title %}Profil — Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Profil</h1>
+        <p class="muted">Kelola akun dan keamanan</p>
+    </div>
+</div>
+
+{% if ok == '1' %}<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Profil diperbarui.</div>{% endif %}
+{% if ok == 'password' %}<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Password diganti.</div>{% endif %}
+
+{% if error %}
+<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i>
+    {% if error == 'short' %}Password baru minimal 8 karakter.
+    {% elif error == 'mismatch' %}Konfirmasi password tidak cocok.
+    {% elif error == 'wrongpass' %}Password saat ini salah.
+    {% elif error == 'csrf' %}Token keamanan tidak valid.
+    {% else %}Data tidak valid.
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="grid-2">
+    <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">Informasi profil</h2></div>
+        <form method="post" action="/admin/profil" class="stack-sm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="field"><span>Nama</span>
+                <input type="text" name="name" value="{{ user.name if user else '' }}" required>
+            </label>
+            <label class="field"><span>Username</span>
+                <input type="text" name="username" value="{{ user.username if user else '' }}" required>
+            </label>
+            <label class="field"><span>Role</span>
+                <input type="text" value="{{ user.role if user else '' }}" disabled>
+            </label>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan profil</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">Ganti password</h2></div>
+        <form method="post" action="/admin/password" class="stack-sm">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <label class="field"><span>Password saat ini</span>
+                <input type="password" name="current_password" required autocomplete="current-password">
+            </label>
+            <label class="field"><span>Password baru</span>
+                <input type="password" name="new_password" required minlength="8" autocomplete="new-password">
+            </label>
+            <label class="field"><span>Ulangi password baru</span>
+                <input type="password" name="confirm_password" required minlength="8" autocomplete="new-password">
+            </label>
+            <button type="submit" class="btn btn-primary"><i class="fa-solid fa-key"></i> Ganti password</button>
+        </form>
+    </section>
+</div>
+{% endblock %}
