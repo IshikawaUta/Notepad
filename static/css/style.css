@@ -734,6 +734,11 @@ html.dark .list a:hover {
   font-size: 0.88rem; line-height: 1.55;
 }
 .prose .codehilite { padding: 0; background: transparent; border: 0; }
+/* Fallback tanpa Pygments: <pre class="codehilite"> — jangan sampai kena reset di atas */
+.prose pre.codehilite {
+  background: var(--code-bg); color: var(--code-text);
+  padding: 1rem 1.1rem; border: 1px solid var(--border);
+}
 .prose .codehilite pre {
   margin: 0; padding: 1rem 1.1rem;
   background: var(--code-bg) !important; border: 1px solid var(--border);
