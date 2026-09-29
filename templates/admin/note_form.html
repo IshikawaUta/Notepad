@@ -1,0 +1,157 @@
+{% extends "admin/base.html" %}
+{% block title %}{% if note %}Edit Catatan{% else %}Tulis Catatan{% endif %} — Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <a href="/admin/catatan" class="muted small back-link"><i class="fa-solid fa-arrow-left"></i> Kembali</a>
+        <h1>{% if note %}Edit Catatan{% else %}Tulis Catatan{% endif %}</h1>
+        {% if note %}<p class="muted small">Slug: /catatan/{{ note.slug }} · {{ format_date(note.updated_at) }}</p>{% endif %}
+    </div>
+    <div class="row-actions">
+        {% if note %}
+        <a class="btn btn-ghost" href="/admin/catatan/{{ note._id }}/revisi"><i class="fa-solid fa-clock-rotate-left"></i> Riwayat</a>
+        <a class="btn btn-ghost" href="/admin/catatan/{{ note._id }}/lihat" target="_blank"><i class="fa-regular fa-eye"></i> Pratinjau</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if created %}<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Catatan dibuat. Silakan lanjutkan penyuntingan.</div>{% endif %}
+{% if request.args.get('saved') %}<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Perubahan tersimpan.</div>{% endif %}
+{% if error %}<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> {{ error }}</div>{% endif %}
+
+<form method="POST"
+      action="{% if note %}/admin/catatan/{{ note._id }}/edit{% else %}/admin/catatan/tambah{% endif %}"
+      class="note-form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="form-grid">
+        <div class="form-main">
+            <label class="field">
+                <span>Judul *</span>
+                <input type="text" name="title" required
+                       value="{{ form_data.title if form_data is defined and form_data else (note.title if note else '') }}"
+                       placeholder="Judul catatan" class="input-lg">
+            </label>
+
+            <label class="field">
+                <span>Ringkasan</span>
+                <textarea name="excerpt" rows="2" placeholder="Deskripsi singkat untuk daftar & SEO">{{ form_data.excerpt if form_data is defined and form_data is not none and form_data.get('excerpt') is not none else (note.excerpt if note and note.excerpt else '') }}</textarea>
+            </label>
+
+            <div class="field">
+                <div class="field-head">
+                    <span>Konten (Markdown) *</span>
+                    <div class="tabs" role="tablist">
+                        <button type="button" class="tab active" data-editor-tab="write">Tulis</button>
+                        <button type="button" class="tab" data-editor-tab="preview">Pratinjau</button>
+                    </div>
+                </div>
+                <div class="editor-toolbar" role="toolbar" aria-label="Alat markdown">
+                    <button type="button" class="tool-btn" data-md="bold" title="Tebal"><i class="fa-solid fa-bold"></i></button>
+                    <button type="button" class="tool-btn" data-md="italic" title="Miring"><i class="fa-solid fa-italic"></i></button>
+                    <button type="button" class="tool-btn" data-md="heading" title="Judul"><i class="fa-solid fa-heading"></i></button>
+                    <button type="button" class="tool-btn" data-md="link" title="Tautan"><i class="fa-solid fa-link"></i></button>
+                    <button type="button" class="tool-btn" data-md="code" title="Kode inline"><i class="fa-solid fa-code"></i></button>
+                    <button type="button" class="tool-btn" data-md="codeblock" title="Blok kode"><i class="fa-solid fa-file-code"></i></button>
+                    <button type="button" class="tool-btn" data-md="list" title="Daftar"><i class="fa-solid fa-list-ul"></i></button>
+                    <button type="button" class="tool-btn" data-md="quote" title="Kutipan"><i class="fa-solid fa-quote-left"></i></button>
+                    <button type="button" class="tool-btn" data-md="table" title="Tabel"><i class="fa-solid fa-table"></i></button>
+                    <button type="button" class="tool-btn" data-md="hr" title="Garis pemisah"><i class="fa-solid fa-minus"></i></button>
+                </div>
+                <textarea name="content" id="md-editor" rows="18" placeholder="# Judul&#10;&#10;Tulis catatan markdown di sini…">{{ form_data.content if form_data is defined and form_data is not none and form_data.get('content') is not none else (note.content if note and note.content else '') }}</textarea>
+                <div id="md-preview" class="markdown-preview prose" hidden></div>
+                <p class="muted small">
+                    <span id="md-stats">0 kata · ~0 menit baca</span>
+                    <span id="editor-status" class="editor-status"></span>
+                    <span id="draft-status" class="editor-status"></span>
+                </p>
+            </div>
+        </div>
+
+        <aside class="form-side">
+            <div class="panel">
+                <h3 class="panel-title">Publikasi</h3>
+                <label class="field">
+                    <span>Status</span>
+                    <select name="status">
+                        {% set cur = form_data.status if form_data is defined and form_data is not none and form_data.get('status') else (note.status if note else 'draft') %}
+                        <option value="draft" {% if cur == 'draft' %}selected{% endif %}>Draf</option>
+                        <option value="published" {% if cur == 'published' %}selected{% endif %}>Terbit</option>
+                        <option value="archived" {% if cur == 'archived' %}selected{% endif %}>Arsip</option>
+                    </select>
+                </label>
+                <label class="check">
+                    {% set pinned = form_data.is_pinned if form_data is defined and form_data is not none and form_data.get('is_pinned') is not none else (note.is_pinned if note else false) %}
+                    <input type="checkbox" name="is_pinned" value="1" {% if pinned %}checked{% endif %}>
+                    <span>Sematkan di atas</span>
+                </label>
+            </div>
+
+            <div class="panel">
+                <h3 class="panel-title">Kategori</h3>
+                <label class="field">
+                    <span>Pilih kategori</span>
+                    {% set cur_cat = form_data.category_id if form_data is defined and form_data is not none and form_data.get('category_id') is not none else (note.category_id if note else '') %}
+                    <select name="category_id">
+                        <option value="">— Tanpa kategori —</option>
+                        {% for c in categories %}
+                        <option value="{{ c._id }}" {% if cur_cat == c._id %}selected{% endif %}>{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <p class="muted small">Kelola di <a href="/admin/kategori">halaman kategori</a>.</p>
+            </div>
+
+            <div class="panel">
+                <h3 class="panel-title">Tag</h3>
+                <label class="field">
+                    <span>Pisahkan dengan koma</span>
+                    <input type="text" name="tags"
+                           value="{% if tags_raw is defined and tags_raw %}{{ tags_raw }}{% elif note and note.tags %}{{ note.tags|join(', ') }}{% endif %}"
+                           placeholder="teknologi, produktivitas">
+                </label>
+            </div>
+
+            <div class="panel">
+                <h3 class="panel-title">Gambar sampul</h3>
+                {% set cf = note.cover_file if note and note.cover_file else none %}
+                <input type="hidden" name="cover_url" id="cover_url"
+                       value="{{ form_data.cover_url if form_data is defined and form_data is not none and form_data.get('cover_url') is not none else (note.cover_url if note and note.cover_url else '') }}">
+                <input type="hidden" name="cover_storage" id="cover_storage"
+                       value="{{ form_data.cover_storage if form_data is defined and form_data is not none and form_data.get('cover_storage') is not none else (cf.storage if cf and cf.storage else '') }}">
+                <input type="hidden" name="cover_path" id="cover_path"
+                       value="{{ form_data.cover_path if form_data is defined and form_data is not none and form_data.get('cover_path') is not none else (cf.path if cf and cf.path else '') }}">
+                <input type="hidden" name="cover_file_id" id="cover_file_id"
+                       value="{{ form_data.cover_file_id if form_data is defined and form_data is not none and form_data.get('cover_file_id') is not none else (cf.file_id if cf and cf.file_id else '') }}">
+                <div class="cover-preview" id="cover-preview">
+                    {% set cover = form_data.cover_url if form_data is defined and form_data is not none and form_data.get('cover_url') else (note.cover_url if note else '') %}
+                    {% if cover %}<img src="{{ cover }}" alt="Sampul">{% endif %}
+                </div>
+                <input type="file" id="cover-input" accept="image/*" class="field-file">
+                <p class="muted small" id="cover-status">Maks 5MB · PNG/JPG/WebP/GIF</p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-floppy-disk"></i> {% if note %}Simpan{% else %}Buat catatan{% endif %}
+            </button>
+            {% if note %}
+            <button type="submit" form="delete-note-form" class="btn btn-danger btn-block"
+                    data-confirm="Hapus catatan ini?">
+                <i class="fa-regular fa-trash-can"></i> Hapus
+            </button>
+            {% endif %}
+        </aside>
+    </div>
+</form>
+
+{% if note %}
+<form id="delete-note-form" method="post" action="/admin/catatan/{{ note._id }}/hapus">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+</form>
+{% endif %}
+{% endblock %}
+
+{% block extra_script %}
+<script src="/static/js/note-form.js" defer></script>
+{% endblock %}
