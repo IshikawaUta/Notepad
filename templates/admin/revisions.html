@@ -1,0 +1,49 @@
+{% extends "admin/base.html" %}
+{% block title %}Riwayat Revisi — Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <a href="/admin/catatan/{{ note._id }}/edit" class="muted small back-link"><i class="fa-solid fa-arrow-left"></i> Kembali ke edit</a>
+        <h1>Riwayat Revisi</h1>
+        <p class="muted small">{{ note.title }} · {{ revisions|length }} versi (maksimal 10 terakhir)</p>
+    </div>
+</div>
+
+{% if restored %}<div class="alert alert-success"><i class="fa-solid fa-circle-check"></i> Versi dipulihkan. Perubahan tersimpan.</div>{% endif %}
+
+{% if revisions %}
+<div class="rev-list">
+    {% for r in revisions %}
+    <div class="panel rev-item">
+        <div class="rev-head">
+            <strong>{{ r.title }}</strong>
+            <span class="muted small">
+                <i class="fa-regular fa-clock"></i> {{ format_date(r.saved_at) }}
+                · {{ r.word_count or 0 }} kata
+                · {% if r.status == 'published' %}Terbit{% elif r.status == 'archived' %}Arsip{% else %}Draf{% endif %}
+            </span>
+        </div>
+        {% if r.excerpt %}<p class="muted small">{{ r.excerpt }}</p>{% endif %}
+        <details class="rev-details">
+            <summary><i class="fa-regular fa-file-lines"></i> Lihat isi versi ini</summary>
+            <pre class="rev-content">{{ r.content or '' }}</pre>
+        </details>
+        <form method="post" action="/admin/catatan/{{ note._id }}/revisi/pulihkan" class="rev-actions">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="rev_id" value="{{ r._id }}">
+            <button type="submit" class="btn btn-ghost btn-sm" data-confirm="Pulihkan catatan ke versi ini? Sampul tidak diubah.">
+                <i class="fa-solid fa-clock-rotate-left"></i> Pulihkan versi ini
+            </button>
+        </form>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+    <p>Belum ada revisi. Riwayat dibuat setiap kali catatan disimpan.</p>
+    <a href="/admin/catatan/{{ note._id }}/edit" class="btn btn-ghost">Ke editor</a>
+</div>
+{% endif %}
+{% endblock %}
