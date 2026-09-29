@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="auto">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Admin — {{ site_name }}{% endblock %}</title>
+    <meta name="csrf-token" content="{{ csrf_token }}">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1e1e1e" media="(prefers-color-scheme: dark)">
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="/static/favicon.ico" sizes="32x32">
+    <link rel="icon" href="/static/favicon-32.png" type="image/png" sizes="32x32">
+    <link rel="icon" href="/static/favicon-16.png" type="image/png" sizes="16x16">
+    <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+    <script src="/static/js/theme-init.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="/static/css/style.css">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="admin-body">
+    <div class="admin-shell">
+        <div class="sidebar-backdrop" id="sidebar-backdrop" hidden></div>
+        <aside class="admin-sidebar" id="admin-sidebar" aria-label="Navigasi admin">
+            <div class="sidebar-brand">
+                <a href="/admin/" class="brand">
+                    <span class="brand-mark"><i class="fa-solid fa-feather-pointed"></i></span>
+                    <span class="brand-text">{{ site_name }} <small>Admin</small></span>
+                </a>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="/admin/" class="side-link {% if request.path in ('/admin', '/admin/') %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i> Dashboard
+                </a>
+                <a href="/admin/catatan" class="side-link {% if '/admin/catatan' in request.path %}active{% endif %}">
+                    <i class="fa-regular fa-note-sticky"></i> Catatan
+                </a>
+                <a href="/admin/catatan/tambah" class="side-link {% if request.path.endswith('/tambah') %}active{% endif %}">
+                    <i class="fa-solid fa-plus"></i> Tulis Baru
+                </a>
+                <a href="/admin/kategori" class="side-link {% if '/admin/kategori' in request.path %}active{% endif %}">
+                    <i class="fa-solid fa-tags"></i> Kategori
+                </a>
+                <a href="/admin/profil" class="side-link {% if '/admin/profil' in request.path %}active{% endif %}">
+                    <i class="fa-solid fa-user-gear"></i> Profil
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <a href="/" class="side-link"><i class="fa-solid fa-arrow-up-right-from-square"></i> Lihat Situs</a>
+                <form method="POST" action="/logout">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="side-link side-btn"><i class="fa-solid fa-right-from-bracket"></i> Keluar</button>
+                </form>
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <button type="button" class="icon-btn admin-menu-btn" id="admin-menu-btn" aria-label="Buka menu" aria-expanded="false" aria-controls="admin-sidebar">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <div class="topbar-right">
+                    <button type="button" class="icon-btn" id="theme-toggle" aria-label="Ganti tema" title="Ganti tema">
+                        <i class="fa-solid fa-moon" id="theme-icon"></i>
+                    </button>
+                    <div class="user-chip">
+                        <span class="avatar">{{ (user.name or user.username or 'A')[:1]|upper }}</span>
+                        <span class="hide-sm">{{ user.name if user else 'Admin' }}</span>
+                    </div>
+                </div>
+            </header>
+
+            <main class="admin-content">
+                {% if csrf_error %}
+                <div class="alert alert-warn"><i class="fa-solid fa-triangle-exclamation"></i> Token keamanan kedaluwarsa. Silakan submit ulang.</div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    <script src="/static/js/main.js" defer></script>
+    <script src="/static/js/load-assets.js" defer></script>
+    {% block extra_script %}{% endblock %}
+</body>
+</html>
