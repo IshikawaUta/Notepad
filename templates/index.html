@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{% if q %}Cari “{{ q }}” — {% endif %}{% if active_tag %}Tag {{ active_tag }} — {% endif %}{{ site_name }}{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="container hero-inner">
+        <p class="eyebrow">{{ site_tagline }}</p>
+        <h1>{{ site_name }}</h1>
+        <p class="lede-sub">Tulis, susun, dan bagikan catatan markdown dengan tampilan yang bersih dan cepat.</p>
+        <form class="hero-search" action="/" method="get" role="search">
+            <input type="search" name="q" value="{{ q or '' }}" placeholder="Cari judul, isi, atau tag…" aria-label="Cari catatan">
+            <button type="submit" class="btn btn-primary">Cari</button>
+        </form>
+    </div>
+</section>
+
+<section class="container layout-2col">
+    <div class="main-col">
+        <div class="toolbar">
+            <div>
+                <h2 class="section-title">
+                    {% if q %}Hasil pencarian{% elif active_tag %}Tag: {{ active_tag }}{% elif active_category %}Kategori{% else %}Catatan terbaru{% endif %}
+                </h2>
+                <p class="muted small">{{ total }} catatan</p>
+            </div>
+            {% if q or active_tag or active_category %}
+            <a href="/" class="btn btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i> Reset</a>
+            {% endif %}
+        </div>
+
+        {% if notes %}
+        {% set ns = namespace(first_img=true) %}
+        <div class="card-grid">
+            {% for note in notes %}
+            <article class="card note-card {% if note.is_pinned %}pinned{% endif %}">
+                {% if note.cover_url %}
+                <a href="/catatan/{{ note.slug }}" class="card-cover">
+                    {% if ns.first_img %}{% set ns.first_img = false %}
+                    <img src="{{ note.cover_url }}" alt="" fetchpriority="high" decoding="async">
+                    {% else %}
+                    <img src="{{ note.cover_url }}" alt="" loading="lazy" fetchpriority="low" decoding="async">
+                    {% endif %}
+                </a>
+                {% endif %}
+                <div class="card-body">
+                    <div class="card-meta">
+                        {% if note.is_pinned %}<span class="badge badge-pin"><i class="fa-solid fa-thumbtack"></i> Disematkan</span>{% endif %}
+                        {% if note.reading_minutes %}<span><i class="fa-regular fa-clock"></i> {{ note.reading_minutes }} mnt</span>{% endif %}
+                        <span><i class="fa-regular fa-eye"></i> {{ note.views or 0 }}</span>
+                    </div>
+                    <h3 class="card-title"><a href="/catatan/{{ note.slug }}">{{ note.title }}</a></h3>
+                    <p class="card-excerpt">{{ note.excerpt or '' }}</p>
+                    <div class="card-footer">
+                        <span class="muted small">{{ format_date(note.published_at or note.created_at) }}</span>
+                        {% if note.tags %}
+                        <div class="tags">
+                            {% for t in note.tags[:3] %}
+                            <a class="tag" href="/tag/{{ t | urlencode }}">#{{ t }}</a>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+        {% if pages > 1 %}
+        <nav class="pagination" aria-label="Paginasi">
+            {% if active_tag and request.path.startswith('/tag/') %}
+            {% set base = '/tag/' ~ (active_tag | urlencode) ~ '?' %}
+            {% set params = [] %}
+            {% if q %}{% set _ = params.append('q=' + q) %}{% endif %}
+            {% else %}
+            {% set base = '/?' %}
+            {% set params = [] %}
+            {% if q %}{% set _ = params.append('q=' + q) %}{% endif %}
+            {% if active_category %}{% set _ = params.append('kategori=' + active_category) %}{% endif %}
+            {% if active_tag %}{% set _ = params.append('tag=' + active_tag) %}{% endif %}
+            {% endif %}
+            {% set qs = params|join('&') %}
+            {% if page > 1 %}
+            <a class="page-btn" href="{{ base }}{% if qs %}{{ qs }}&{% endif %}page={{ page - 1 }}"><i class="fa-solid fa-chevron-left"></i></a>
+            {% endif %}
+            {% for p in range(1, pages + 1) %}
+                {% if p == page or p == 1 or p == pages or (p - page)|abs <= 1 %}
+                <a class="page-btn {% if p == page %}active{% endif %}" href="{{ base }}{% if qs %}{{ qs }}&{% endif %}page={{ p }}">{{ p }}</a>
+                {% elif (p - page)|abs == 2 %}
+                <span class="page-ellipsis">…</span>
+                {% endif %}
+            {% endfor %}
+            {% if page < pages %}
+            <a class="page-btn" href="{{ base }}{% if qs %}{{ qs }}&{% endif %}page={{ page + 1 }}"><i class="fa-solid fa-chevron-right"></i></a>
+            {% endif %}
+        </nav>
+        {% endif %}
+        {% else %}
+        <div class="empty-state">
+            <i class="fa-regular fa-note-sticky"></i>
+            <p>Belum ada catatan yang cocok.</p>
+            <a href="/" class="btn btn-ghost">Lihat semua</a>
+        </div>
+        {% endif %}
+    </div>
+
+    <aside class="side-col">
+        <div class="panel">
+            <h3 class="panel-title">Kategori</h3>
+            <ul class="list">
+                <li>
+                    <a href="/" class="{% if not active_category %}active{% endif %}">
+                        <span>Semua</span><span class="count">{{ total }}</span>
+                    </a>
+                </li>
+                {% for c in categories %}
+                <li>
+                    <a href="/?kategori={{ c.slug }}" class="{% if active_category == c.slug %}active{% endif %}">
+                        <span><i class="dot" style="background:{{ c.color or '#6366f1' }}"></i> {{ c.name }}</span>
+                        <span class="count">{{ category_counts.get(c._id, 0) }}</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="muted small">Belum ada kategori</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        {% if tags %}
+        <div class="panel">
+            <h3 class="panel-title">Tag</h3>
+            <div class="tags wrap">
+                {% for t in tags %}
+                <a class="tag {% if active_tag == t %}active{% endif %}" href="/tag/{{ t | urlencode }}">#{{ t }}</a>
+                {% endfor %}
+            </div>
+            <p class="muted small" style="margin-top:0.75rem"><a href="/tag"><i class="fa-solid fa-tags"></i> Semua tag</a></p>
+        </div>
+        {% endif %}
+    </aside>
+</section>
+{% endblock %}
