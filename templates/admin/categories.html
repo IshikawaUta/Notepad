@@ -1,0 +1,94 @@
+{% extends "admin/base.html" %}
+{% block title %}Kategori — Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Kategori</h1>
+        <p class="muted">{{ categories|length }} kategori</p>
+    </div>
+</div>
+
+{% if request.args.get('error') == 'terpakai' %}
+<div class="alert alert-error"><i class="fa-solid fa-circle-exclamation"></i> Kategori masih digunakan catatan. Pindahkan catatan dulu sebelum menghapus.</div>
+{% endif %}
+
+<div class="grid-2">
+    <section class="panel">
+        <div class="panel-head"><h2 class="panel-title">Daftar</h2></div>
+        <div class="table-wrap">
+            <table class="table">
+                <thead>
+                    <tr><th>Nama</th><th>Slug</th><th>Catatan</th><th class="right">Aksi</th></tr>
+                </thead>
+                <tbody>
+                    {% for c in categories %}
+                    <tr>
+                        <td>
+                            <span class="title-link"><i class="dot" style="background:{{ c.color or '#6366f1' }}"></i> {{ c.name }}</span>
+                            {% if c.description %}<div class="muted small">{{ c.description }}</div>{% endif %}
+                        </td>
+                        <td class="muted small">{{ c.slug }}</td>
+                        <td>{{ counts.get(c._id, 0) }}</td>
+                        <td class="right">
+                            <div class="row-actions">
+                                <button type="button" class="icon-btn" data-edit-cat="{{ c._id }}"
+                                        data-name="{{ c.name }}" data-desc="{{ c.description or '' }}"
+                                        data-color="{{ c.color or '#6366f1' }}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                                <form method="post" action="/admin/kategori/{{ c._id }}/hapus" class="inline-form"
+                                      data-confirm="Hapus kategori «{{ c.name }}»? Catatan di dalamnya tidak ikut terhapus.">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                    <button type="submit" class="icon-btn danger" title="Hapus"><i class="fa-regular fa-trash-can"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="muted">Belum ada kategori.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="stack">
+        <section class="panel">
+            <div class="panel-head"><h2 class="panel-title">Tambah kategori</h2></div>
+            <form method="post" action="/admin/kategori/tambah" class="stack-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="field"><span>Nama *</span>
+                    <input type="text" name="name" required placeholder="Mis. Teknologi">
+                </label>
+                <label class="field"><span>Deskripsi</span>
+                    <input type="text" name="description" placeholder="Opsional">
+                </label>
+                <label class="field"><span>Warna</span>
+                    <input type="color" name="color" value="#6366f1">
+                </label>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tambah</button>
+            </form>
+        </section>
+
+        <section class="panel" id="edit-cat-panel" hidden>
+            <div class="panel-head"><h2 class="panel-title">Edit kategori</h2></div>
+            <form method="post" id="edit-cat-form" class="stack-sm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label class="field"><span>Nama *</span>
+                    <input type="text" name="name" id="edit-cat-name" required>
+                </label>
+                <label class="field"><span>Deskripsi</span>
+                    <input type="text" name="description" id="edit-cat-desc">
+                </label>
+                <label class="field"><span>Warna</span>
+                    <input type="color" name="color" id="edit-cat-color" value="#6366f1">
+                </label>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Simpan</button>
+            </form>
+        </section>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script src="/static/js/categories.js" defer></script>
+{% endblock %}
