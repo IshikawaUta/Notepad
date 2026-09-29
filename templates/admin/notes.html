@@ -1,0 +1,90 @@
+{% extends "admin/base.html" %}
+{% block title %}Catatan — Admin{% endblock %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Catatan</h1>
+        <p class="muted">{{ total }} catatan</p>
+    </div>
+    <a href="/admin/catatan/tambah" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Tulis Baru</a>
+</div>
+
+<form class="filter-bar" method="get" action="/admin/catatan">
+    <input type="search" name="q" value="{{ q or '' }}" placeholder="Cari catatan…">
+    <select name="status">
+        <option value="">Semua status</option>
+        <option value="published" {% if status_filter == 'published' %}selected{% endif %}>Terbit</option>
+        <option value="draft" {% if status_filter == 'draft' %}selected{% endif %}>Draf</option>
+        <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>Arsip</option>
+    </select>
+    <button type="submit" class="btn btn-ghost">Filter</button>
+    {% if q or status_filter %}
+    <a href="/admin/catatan" class="btn btn-ghost">Reset</a>
+    {% endif %}
+</form>
+
+<section class="panel">
+    <div class="table-wrap">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Judul</th>
+                    <th>Kategori</th>
+                    <th>Status</th>
+                    <th>Views</th>
+                    <th>Diperbarui</th>
+                    <th class="right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notes %}
+                <tr>
+                    <td>
+                        <a href="/admin/catatan/{{ n._id }}/edit" class="title-link">
+                            {% if n.is_pinned %}<i class="fa-solid fa-thumbtack pin" title="Disematkan"></i>{% endif %}
+                            {{ n.title }}
+                        </a>
+                        {% if n.tags %}
+                        <div class="tags wrap">{% for t in n.tags[:4] %}<span class="tag">#{{ t }}</span>{% endfor %}</div>
+                        {% endif %}
+                    </td>
+                    <td>{{ n.category.name if n.category else '—' }}</td>
+                    <td><span class="pill pill-{{ n.status }}">{{ n.status }}</span></td>
+                    <td>{{ n.views or 0 }}</td>
+                    <td class="muted small">{{ format_date(n.updated_at) }}</td>
+                    <td class="right">
+                        <div class="row-actions">
+                            <a class="icon-btn" href="/admin/catatan/{{ n._id }}/lihat" title="Lihat" target="_blank"><i class="fa-regular fa-eye"></i></a>
+                            <a class="icon-btn" href="/admin/catatan/{{ n._id }}/edit" title="Edit"><i class="fa-solid fa-pen"></i></a>
+                            <a class="icon-btn" href="/admin/catatan/{{ n._id }}/revisi" title="Riwayat revisi"><i class="fa-solid fa-clock-rotate-left"></i></a>
+                            <form method="post" action="/admin/catatan/{{ n._id }}/hapus" class="inline-form"
+                                  data-confirm="Hapus catatan «{{ n.title }}»?">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                <button type="submit" class="icon-btn danger" title="Hapus"><i class="fa-regular fa-trash-can"></i></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="muted center">Belum ada catatan. <a href="/admin/catatan/tambah">Tulis sekarang</a></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+{% if pages > 1 %}
+<nav class="pagination">
+    {% if page > 1 %}
+    <a class="page-btn" href="/admin/catatan?page={{ page - 1 }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"><i class="fa-solid fa-chevron-left"></i></a>
+    {% endif %}
+    {% for p in range(1, pages + 1) %}
+    <a class="page-btn {% if p == page %}active{% endif %}" href="/admin/catatan?page={{ p }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">{{ p }}</a>
+    {% endfor %}
+    {% if page < pages %}
+    <a class="page-btn" href="/admin/catatan?page={{ page + 1 }}{% if q %}&q={{ q }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}"><i class="fa-solid fa-chevron-right"></i></a>
+    {% endif %}
+</nav>
+{% endif %}
+{% endblock %}
