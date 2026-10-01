@@ -787,6 +787,9 @@ html.dark .list a:hover {
   font-style: italic; opacity: 0.9;
 }
 .prose table { width: 100%; border-collapse: collapse; margin: 1.1em 0; font-size: 0.95em; }
+/* Tabel lebar: gulir horizontal (wrapper dipasang oleh main.js) */
+.prose .table-scroll { overflow-x: auto; max-width: 100%; margin: 1.1em 0; }
+.prose .table-scroll table { margin: 0; }
 .prose th, .prose td {
   border: 1px solid var(--border); padding: 0.55rem 0.75rem; text-align: left;
 }
@@ -1163,6 +1166,7 @@ textarea[name="content"]:focus, .input-lg:focus {
   a { color: #000; text-decoration: underline; }
   .container, .note-layout { max-width: 100% !important; }
   .prose pre, .prose blockquote, .prose table, .prose figure, .card { break-inside: avoid; page-break-inside: avoid; }
+  .prose .table-scroll { overflow: visible; }
   .prose pre { white-space: pre-wrap; word-break: break-word; }
   h1, h2, h3 { break-after: avoid; page-break-after: avoid; }
   .prose img { max-width: 100% !important; }
