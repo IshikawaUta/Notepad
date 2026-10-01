@@ -679,10 +679,24 @@
     wrap.insertBefore(btn, pre);
   }
 
+  function wrapTables(scope) {
+    const tables = scope.querySelectorAll("table");
+    for (let i = 0; i < tables.length; i++) {
+      const t = tables[i];
+      const p = t.parentElement;
+      if (p && p.classList && p.classList.contains("table-scroll")) continue;
+      const wrap = document.createElement("div");
+      wrap.className = "table-scroll";
+      t.parentNode.insertBefore(wrap, t);
+      wrap.appendChild(t);
+    }
+  }
+
   function enhanceCodeBlocks(root) {
     const scope = root || document;
     const pres = scope.querySelectorAll("pre");
     for (let i = 0; i < pres.length; i++) enhanceOnePre(pres[i]);
+    wrapTables(scope);
   }
 
   function copyTextToClipboard(text) {
