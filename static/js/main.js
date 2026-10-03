@@ -401,15 +401,38 @@
 
     const lines = text.split("\n");
     const out = [];
-    let inUl = false;
-    let inOl = false;
+    const listStack = [];
     let inBq = false;
     let para = [];
 
+    function openList(ordered, indent) {
+      listStack.push({ ordered: ordered, indent: indent, liOpen: false });
+      out.push(ordered ? "<ol>" : "<ul>");
+    }
+
+    function closeTopList() {
+      const e = listStack.pop();
+      if (!e) return;
+      out.push((e.liOpen ? "</li>" : "") + (e.ordered ? "</ol>" : "</ul>"));
+    }
+
     function closeLists() {
-      if (inUl) { out.push("</ul>"); inUl = false; }
-      if (inOl) { out.push("</ol>"); inOl = false; }
+      while (listStack.length) closeTopList();
       if (inBq) { out.push("</blockquote>"); inBq = false; }
+    }
+
+    function listMarker(line) {
+      const m = line.match(/^([ \t]*)([-*+]|\d+\.)\s+(.*)$/);
+      if (!m) return null;
+      return {
+        indent: m[1].replace(/\t/g, "    ").length,
+        ordered: /\d/.test(m[2]),
+        content: m[3]
+      };
+    }
+
+    function lineIndent(line) {
+      return ((line.match(/^[ \t]*/) || [""])[0]).replace(/\t/g, "    ").length;
     }
 
     function flushPara() {
@@ -440,6 +463,13 @@
       let m;
       if (line.trim() === "") {
         flushPara();
+        if (listStack.length) {
+          let j = i + 1;
+          while (j < lines.length && lines[j].trim() === "") j++;
+          if (j < lines.length && listMarker(lines[j])) {
+            continue;
+          }
+        }
         closeLists();
         continue;
       }
@@ -499,26 +529,52 @@
           out.push("<hr>");
           continue;
         }
-        if ((m = line.match(/^\s*[-*+]\s+(.*)$/))) {
-          if (inOl || inBq) closeLists();
-          if (!inUl) { out.push("<ul>"); inUl = true; }
-          out.push("<li>" + inline(m[1]) + "</li>");
-          continue;
-        }
-        if ((m = line.match(/^\s*\d+\.\s+(.*)$/))) {
-          if (inUl || inBq) closeLists();
-          if (!inOl) { out.push("<ol>"); inOl = true; }
-          out.push("<li>" + inline(m[1]) + "</li>");
+        const mk = listMarker(line);
+        if (mk) {
+          if (inBq) closeLists();
+          while (listStack.length && mk.indent < listStack[listStack.length - 1].indent) {
+            closeTopList();
+          }
+          const top = listStack[listStack.length - 1];
+          if (!top || mk.indent > top.indent) {
+            openList(mk.ordered, mk.indent);
+          } else if (top.ordered !== mk.ordered) {
+            closeTopList();
+            openList(mk.ordered, mk.indent);
+          }
+          const cur = listStack[listStack.length - 1];
+          let keepOpen = false;
+          let j = i + 1;
+          while (j < lines.length && lines[j].trim() === "") j++;
+          if (j < lines.length) {
+            const nx = listMarker(lines[j]);
+            if (nx) {
+              keepOpen = nx.indent > mk.indent;
+            } else if (!isBlockLine(lines[j])) {
+              keepOpen = lineIndent(lines[j]) > mk.indent;
+            }
+          }
+          const hadOpen = cur.liOpen;
+          cur.liOpen = keepOpen;
+          out.push((hadOpen ? "</li>" : "") + "<li>" + inline(mk.content) + (keepOpen ? "" : "</li>"));
           continue;
         }
         if ((m = line.match(/^>\s?(.*)$/))) {
-          if (inUl || inOl) closeLists();
+          if (listStack.length) closeLists();
           if (!inBq) { out.push("<blockquote>"); inBq = true; }
           out.push("<p>" + inline(m[1]) + "</p>");
           continue;
         }
       }
-      if (inUl || inOl || inBq) {
+      if (listStack.length && !inBq) {
+        const top = listStack[listStack.length - 1];
+        if (lineIndent(line) > top.indent) {
+          if (top.liOpen) out.push("<br>" + inline(line.trim()));
+          else out.push("<p>" + inline(line.trim()) + "</p>");
+          continue;
+        }
+      }
+      if (listStack.length || inBq) {
         flushPara();
         closeLists();
       }
