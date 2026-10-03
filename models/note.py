@@ -8,13 +8,56 @@ from models import parse_object_id, serialize_doc, serialize_docs
 from models.category import slugify
 
 
+_LIST_MARKER_RE = re.compile(r"^([ \t]*)([-*+]|\d+\.)\s")
+_FENCE_RE = re.compile(r"^\s{0,3}(`{3,}|~{3,})")
+_HR_RE = re.compile(r"^[ \t]*([-*_])[ \t]*(?:\1[ \t]*){2,}$")
+
+
+def _normalize_list_indent(text: str) -> str:
+    """python-markdown hanya menganggap list bersarang bila indentasi >= 4 spasi,
+    sedangkan penulis umumnya memakai gaya CommonMark (2 spasi per level).
+    Sadari level list dari urutan marker: marker yang indentasinya < 4 (atau yang
+    leluhurnya bergaya CommonMark) ditulis ulang ke kelipatan 4 spasi per level
+    agar hierarki daftar tetap terjaga. Indentasi >= 4 tanpa leluhur CommonMark
+    dibiarkan (gaya python-markdown lama & blok kode tetap utuh)."""
+    out: list[str] = []
+    fence_char = ""
+    levels: list[int] = []
+    for line in text.split("\n"):
+        fm = _FENCE_RE.match(line)
+        if fm:
+            ch = fm.group(1)[0]
+            if not fence_char:
+                fence_char = ch
+                out.append(line)
+                continue
+            if ch == fence_char:
+                fence_char = ""
+                out.append(line)
+                continue
+        if not fence_char and not _HR_RE.match(line):
+            mm = _LIST_MARKER_RE.match(line)
+            if mm:
+                raw = mm.group(1)
+                indent = len(raw.replace("\t", "    "))
+                while levels and indent < levels[-1]:
+                    levels.pop()
+                if not levels or indent > levels[-1]:
+                    levels.append(indent)
+                common_style = indent < 4 or any(lv < 4 for lv in levels[:-1])
+                if common_style:
+                    line = " " * ((len(levels) - 1) * 4) + line[len(raw):]
+        out.append(line)
+    return "\n".join(out)
+
+
 def render_markdown(text: str) -> str:
     import markdown as md
 
     from services.sanitize import sanitize_html
 
     html = md.markdown(
-        text or "",
+        _normalize_list_indent(text or ""),
         extensions=[
             "extra",
             "fenced_code",
