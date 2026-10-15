@@ -51,13 +51,47 @@ def _normalize_list_indent(text: str) -> str:
     return "\n".join(out)
 
 
+_FENCE_OPEN_RE = re.compile(r"^([ \t]+)(`{3,}|~{3,})[ \t]*([A-Za-z0-9_+#.-]*)[ \t]*$")
+_FENCE_TOKEN_RE = re.compile(r"(?:<p>\s*)?@@FENCE(\d+)@@(?:\s*</p>)?")
+
+
+def _extract_indented_fences(text: str) -> tuple[str, list[tuple[str, str]]]:
+    """python-markdown gagal mem-parse code fence yang terindenasi (fence di
+    dalam/di bawah bullet) sehingga jatuh menjadi code inline. Ekstrak fence
+    terindenasi menjadi token, lalu ganti kembali setelah render dengan
+    CodeHilite agar tetap menjadi blok kode."""
+    out: list[str] = []
+    fences: list[tuple[str, str]] = []
+    lines = text.split("\n")
+    i = 0
+    while i < len(lines):
+        m = _FENCE_OPEN_RE.match(lines[i])
+        if m:
+            indent, ticks, lang = m.group(1), m.group(2), m.group(3)
+            close_re = re.compile(r"^[ \t]*" + re.escape(ticks[0]) + r"{%d,}[ \t]*$" % len(ticks))
+            j = i + 1
+            while j < len(lines) and not close_re.match(lines[j]):
+                j += 1
+            if j < len(lines):
+                fences.append((lang, "\n".join(lines[i + 1 : j])))
+                out.append(f"{indent}@@FENCE{len(fences) - 1}@@")
+                i = j + 1
+                continue
+        out.append(lines[i])
+        i += 1
+    return "\n".join(out), fences
+
+
 def render_markdown(text: str) -> str:
     import markdown as md
 
     from services.sanitize import sanitize_html
 
+    # Seragamkan line ending (konten tempelan dari Windows memakai CRLF) supaya
+    # ekstraksi fence dan parser markdown tidak meleset.
+    body, fences = _extract_indented_fences((text or "").replace("\r\n", "\n").replace("\r", "\n"))
     html = md.markdown(
-        _normalize_list_indent(text or ""),
+        _normalize_list_indent(body),
         extensions=[
             "extra",
             "fenced_code",
@@ -71,6 +105,17 @@ def render_markdown(text: str) -> str:
             "toc": {"permalink": False},
         },
     )
+    if fences:
+        from markdown.extensions.codehilite import CodeHilite
+
+        def _fence_swap(m: re.Match) -> str:
+            lang, code = fences[int(m.group(1))]
+            opts: dict = {"guess_lang": False, "noclasses": False, "cssclass": "codehilite"}
+            if lang:
+                opts["lang"] = lang
+            return CodeHilite(code, **opts).hilite()
+
+        html = _FENCE_TOKEN_RE.sub(_fence_swap, html)
     # Strip hard-coded light pygments background so theme CSS wins
     html = html.replace(' style="background: #f8f8f8"', "").replace(' style="background:#f8f8f8"', "")
     html = sanitize_html(html)
