@@ -59,7 +59,7 @@ _FENCE_TOKEN_RE = re.compile(r"(?:<p>\s*)?@@FENCE(\d+)@@(?:\s*</p>)?")
 _MATH_BLOCK_RE = re.compile(r"\$\$([\s\S]+?)\$\$")
 _MATH_BRACKET_RE = re.compile(r"\\\[([\s\S]+?)\\\]")
 _MATH_PAREN_RE = re.compile(r"\\\(([^\n]+?)\\\)")
-_MATH_INLINE_RE = re.compile(r"(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?!\$)")
+_MATH_INLINE_RE = re.compile(r"(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?![\w$])")
 _MATH_TOKEN_RE = re.compile(r"@@MATH(\d+)@@")
 
 
