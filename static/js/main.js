@@ -430,6 +430,7 @@
   }
 
   function mdToHtml(src) {
+    src = String(src == null ? "" : src).replace(/\r\n?/g, "\n");
     const extracted = extractSafeHtml(src);
     const htmlStore = extracted.store;
     const math = extractMath(extracted.text);
@@ -457,9 +458,11 @@
     let inBq = false;
     let para = [];
 
-    function openList(ordered, indent) {
+    function openList(ordered, indent, start) {
       listStack.push({ ordered: ordered, indent: indent, liOpen: false });
-      out.push(ordered ? "<ol>" : "<ul>");
+      if (!ordered) { out.push("<ul>"); return; }
+      const n = parseInt(start, 10);
+      out.push(n > 1 ? '<ol start="' + n + '">' : "<ol>");
     }
 
     function closeTopList() {
@@ -479,6 +482,7 @@
       return {
         indent: m[1].replace(/\t/g, "    ").length,
         ordered: /\d/.test(m[2]),
+        start: /\d/.test(m[2]) ? parseInt(m[2], 10) : 0,
         content: m[3]
       };
     }
@@ -589,10 +593,10 @@
           }
           const top = listStack[listStack.length - 1];
           if (!top || mk.indent > top.indent) {
-            openList(mk.ordered, mk.indent);
+            openList(mk.ordered, mk.indent, mk.start);
           } else if (top.ordered !== mk.ordered) {
             closeTopList();
-            openList(mk.ordered, mk.indent);
+            openList(mk.ordered, mk.indent, mk.start);
           }
           const cur = listStack[listStack.length - 1];
           let keepOpen = false;
