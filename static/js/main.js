@@ -381,7 +381,7 @@
   const MATH_BLOCK_RE = /\$\$([\s\S]+?)\$\$/g;
   const MATH_BRACKET_RE = /\\\[([\s\S]+?)\\\]/g;
   const MATH_PAREN_RE = /\\\(([^\n]+?)\\\)/g;
-  const MATH_INLINE_RE = /(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?!\$)/g;
+  const MATH_INLINE_RE = /(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?![\w$])/g;
 
   function extractMath(src) {
     const items = [];
