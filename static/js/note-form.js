@@ -28,6 +28,7 @@
       ? window.mdToHtml(text)
       : '<p class="muted">Preview markdown.</p>';
     if (window.enhanceCodeBlocks) window.enhanceCodeBlocks(preview);
+    if (window.typesetMath) window.typesetMath(preview);
   }
 
   function renderActiveTab() {
