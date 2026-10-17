@@ -388,7 +388,7 @@ LIST_FIELDS_DEFAULT = ("title", "slug", "excerpt", "category_id", "tags", "statu
 
 async def list_notes(
     page: int = 1,
-    limit: int = 9,
+    limit: int = 10,
     status: str | None = "published",
     category_id: str | None = None,
     category_slug: str | None = None,
