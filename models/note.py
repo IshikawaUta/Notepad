@@ -54,6 +54,44 @@ def _normalize_list_indent(text: str) -> str:
 _FENCE_OPEN_RE = re.compile(r"^([ \t]+)(`{3,}|~{3,})[ \t]*([A-Za-z0-9_+#.-]*)[ \t]*$")
 _FENCE_TOKEN_RE = re.compile(r"(?:<p>\s*)?@@FENCE(\d+)@@(?:\s*</p>)?")
 
+# Rumus LaTeX (MathJax). Diekstrak sebagai token sebelum markdown agar
+# underscore/asterisk/backslash di dalam rumus tidak diubah markdown.
+_MATH_BLOCK_RE = re.compile(r"\$\$([\s\S]+?)\$\$")
+_MATH_BRACKET_RE = re.compile(r"\\\[([\s\S]+?)\\\]")
+_MATH_PAREN_RE = re.compile(r"\\\(([^\n]+?)\\\)")
+_MATH_INLINE_RE = re.compile(r"(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?!\$)")
+_MATH_TOKEN_RE = re.compile(r"@@MATH(\d+)@@")
+
+
+def _extract_math(text: str) -> tuple[str, list[str]]:
+    """Sembunyikan rumus ($...$, $$...$$, \\(...\\), \\[...\\]) menjadi token
+    supaya tidak diproses markdown; dikembalikan setelah render sebagai
+    \\(...\\) / \\[...\\] agar diproses MathJax di browser. Delimiter dolar
+    dinormalkan karena MathJax memperlakukan "$5 dan $" sebagai rumus."""
+    math: list[str] = []
+
+    def _store(raw: str) -> str:
+        math.append(raw)
+        return f"@@MATH{len(math) - 1}@@"
+
+    text = _MATH_BLOCK_RE.sub(lambda m: _store("\\[" + m.group(1) + "\\]"), text)
+    text = _MATH_BRACKET_RE.sub(lambda m: _store("\\[" + m.group(1) + "\\]"), text)
+    text = _MATH_PAREN_RE.sub(lambda m: _store("\\(" + m.group(1) + "\\)"), text)
+
+    def _inline(m: re.Match) -> str:
+        return m.group(1) + _store("\\(" + m.group(2) + "\\)")
+
+    return _MATH_INLINE_RE.sub(_inline, text), math
+
+
+def _restore_math(html: str, math: list[str]) -> str:
+    from html import escape as html_escape
+
+    if not math:
+        return html
+
+    return _MATH_TOKEN_RE.sub(lambda m: html_escape(math[int(m.group(1))], quote=False), html)
+
 
 def _extract_indented_fences(text: str) -> tuple[str, list[tuple[str, str]]]:
     """python-markdown gagal mem-parse code fence yang terindenasi (fence di
@@ -90,6 +128,7 @@ def render_markdown(text: str) -> str:
     # Seragamkan line ending (konten tempelan dari Windows memakai CRLF) supaya
     # ekstraksi fence dan parser markdown tidak meleset.
     body, fences = _extract_indented_fences((text or "").replace("\r\n", "\n").replace("\r", "\n"))
+    body, math = _extract_math(body)
     html = md.markdown(
         _normalize_list_indent(body),
         extensions=[
@@ -116,6 +155,7 @@ def render_markdown(text: str) -> str:
             return CodeHilite(code, **opts).hilite()
 
         html = _FENCE_TOKEN_RE.sub(_fence_swap, html)
+    html = _restore_math(html, math)
     # Strip hard-coded light pygments background so theme CSS wins
     html = html.replace(' style="background: #f8f8f8"', "").replace(' style="background:#f8f8f8"', "")
     html = sanitize_html(html)
