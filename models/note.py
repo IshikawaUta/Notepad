@@ -60,6 +60,7 @@ _MATH_BLOCK_RE = re.compile(r"\$\$([\s\S]+?)\$\$")
 _MATH_BRACKET_RE = re.compile(r"\\\[([\s\S]+?)\\\]")
 _MATH_PAREN_RE = re.compile(r"\\\(([^\n]+?)\\\)")
 _MATH_INLINE_RE = re.compile(r"(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?![\w$])")
+_MATH_ENV_RE = re.compile(r"\\begin\{([A-Za-z]+\*?)\}[\s\S]*?\\end\{\1\}")
 _MATH_TOKEN_RE = re.compile(r"@@MATH(\d+)@@")
 
 
@@ -81,7 +82,10 @@ def _extract_math(text: str) -> tuple[str, list[str]]:
     def _inline(m: re.Match) -> str:
         return m.group(1) + _store("\\(" + m.group(2) + "\\)")
 
-    return _MATH_INLINE_RE.sub(_inline, text), math
+    text = _MATH_INLINE_RE.sub(_inline, text)
+    # Environment berdiri sendiri (mis. \begin{aligned}...\end{aligned}) juga
+    # dilindungi; tanpa ini markdown menelan "\\" pemisah baris.
+    return _MATH_ENV_RE.sub(lambda m: _store("\\[" + m.group(0) + "\\]"), text), math
 
 
 def _restore_math(html: str, math: list[str]) -> str:
