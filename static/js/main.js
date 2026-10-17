@@ -502,9 +502,13 @@
       return /^\u0000HTML\d+\u0000$/.test(line.trim());
     }
 
+    function isBlockPlaceholderLine(line) {
+      return /^\u0000BLOCK\d+\u0000$/.test(line.trim());
+    }
+
     function isBlockLine(line) {
       return (
-        /^\u0000BLOCK\d+\u0000$/.test(line.trim()) ||
+        isBlockPlaceholderLine(line) ||
         isHtmlPlaceholderLine(line) ||
         /^(#{1,6})\s+/.test(line) ||
         /^\s*([-*_])\s*\1\s*\1[\s-]*$/.test(line) ||
@@ -520,13 +524,18 @@
       if (line.trim() === "") {
         flushPara();
         if (listStack.length) {
+          const openTop = listStack[listStack.length - 1];
           let j = i + 1;
           while (j < lines.length && lines[j].trim() === "") j++;
-          if (j < lines.length && listMarker(lines[j])) {
+          if (j < lines.length && (listMarker(lines[j]) || lineIndent(lines[j]) > openTop.indent)) {
             continue;
           }
         }
         closeLists();
+        continue;
+      }
+      if (para.length && !listStack.length && listMarker(line)) {
+        para.push(line);
         continue;
       }
       if (i + 1 < lines.length && isTableStart(line, lines[i + 1])) {
@@ -569,7 +578,13 @@
       }
       if (isBlockLine(line)) {
         flushPara();
-        if (/^\u0000BLOCK\d+\u0000$/.test(line.trim()) || isHtmlPlaceholderLine(line)) {
+        if (isBlockPlaceholderLine(line)) {
+          const openTop = listStack[listStack.length - 1];
+          if (!openTop || lineIndent(line) <= openTop.indent) closeLists();
+          out.push(line.trim());
+          continue;
+        }
+        if (isHtmlPlaceholderLine(line)) {
           closeLists();
           out.push(line.trim());
           continue;
@@ -606,7 +621,7 @@
             const nx = listMarker(lines[j]);
             if (nx) {
               keepOpen = nx.indent > mk.indent;
-            } else if (!isBlockLine(lines[j])) {
+            } else if (!isBlockLine(lines[j]) || isBlockPlaceholderLine(lines[j])) {
               keepOpen = lineIndent(lines[j]) > mk.indent;
             }
           }
