@@ -378,10 +378,57 @@
     return splitTableRow(line).length === splitTableRow(next).length;
   }
 
+  const MATH_BLOCK_RE = /\$\$([\s\S]+?)\$\$/g;
+  const MATH_BRACKET_RE = /\\\[([\s\S]+?)\\\]/g;
+  const MATH_PAREN_RE = /\\\(([^\n]+?)\\\)/g;
+  const MATH_INLINE_RE = /(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?!\$)/g;
+
+  function extractMath(src) {
+    const items = [];
+    function store(raw) {
+      items.push(raw);
+      return "\u0000MATH" + (items.length - 1) + "\u0000";
+    }
+    // Output selalu \(...\) / \[...\]: MathJax memperlakukan "$5 dan $"
+    // sebagai rumus sehingga teks dolar biasa bisa rusak.
+    let text = String(src || "");
+    text = text.replace(MATH_BLOCK_RE, function (_, c) {
+      return store("\\[" + c + "\\]");
+    });
+    text = text.replace(MATH_BRACKET_RE, function (_, c) {
+      return store("\\[" + c + "\\]");
+    });
+    text = text.replace(MATH_PAREN_RE, function (_, c) {
+      return store("\\(" + c + "\\)");
+    });
+    text = text.replace(MATH_INLINE_RE, function (_, prefix, c) {
+      return prefix + store("\\(" + c + "\\)");
+    });
+    return { text: text, items: items };
+  }
+
+  let typesetTimer = 0;
+  function typesetMath(el) {
+    if (!el || !window.MathJax || typeof window.MathJax.typesetPromise !== "function") return;
+    clearTimeout(typesetTimer);
+    typesetTimer = setTimeout(function () {
+      const run = function () {
+        window.MathJax.typesetPromise([el]).catch(function () {});
+      };
+      const startup = window.MathJax.startup;
+      if (startup && startup.promise && typeof startup.promise.then === "function") {
+        startup.promise.then(run).catch(function () {});
+      } else {
+        run();
+      }
+    }, 120);
+  }
+
   function mdToHtml(src) {
     const extracted = extractSafeHtml(src);
     const htmlStore = extracted.store;
-    let text = escapeHtml(extracted.text);
+    const math = extractMath(extracted.text);
+    let text = escapeHtml(math.text);
     const blocks = [];
     text = text.replace(/```([\s\S]*?)```/g, function (_, raw) {
       let body = raw.replace(/^\n+|\n+$/g, "");
@@ -588,6 +635,9 @@
     });
     html = html.replace(/\u0000HTML(\d+)\u0000/g, function (_, i) {
       return htmlStore[Number(i)] || "";
+    });
+    html = html.replace(/\u0000MATH(\d+)\u0000/g, function (_, i) {
+      return escapeHtml(math.items[Number(i)] || "");
     });
     return html;
   }
@@ -990,6 +1040,7 @@
 
   window.mdToHtml = mdToHtml;
   window.enhanceCodeBlocks = enhanceCodeBlocks;
+  window.typesetMath = typesetMath;
 
   function bootEnhance() {
     enhanceCodeBlocks(document);
