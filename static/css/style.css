@@ -708,6 +708,13 @@ html.dark .list a:hover {
 .prose h4 { font-size: 1.05rem; }
 .prose p, .prose ul, .prose ol { margin: 0.95em 0; }
 .prose li { margin: 0.35em 0; }
+/* Rumus MathJax (CHTML) */
+mjx-container { font-size: 1.02em; }
+mjx-container[display="true"], mjx-container[jax="CHTML"][display="true"] {
+  display: block; margin: 1.1em 0; overflow-x: auto; overflow-y: hidden;
+  max-width: 100%; text-align: center;
+}
+mjx-container:not([display="true"]) { overflow-x: auto; overflow-y: hidden; max-width: 100%; }
 .prose a { color: var(--primary); text-decoration: none; border-bottom: 1px dashed transparent; }
 .prose a:hover { border-bottom-color: var(--primary); color: var(--primary-2); }
 .prose ul { list-style: none; padding-left: 0.25rem; }
