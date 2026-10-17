@@ -382,6 +382,7 @@
   const MATH_BRACKET_RE = /\\\[([\s\S]+?)\\\]/g;
   const MATH_PAREN_RE = /\\\(([^\n]+?)\\\)/g;
   const MATH_INLINE_RE = /(^|[^\\$])\$(?!\s)((?:\\[\s\S]|[^\n$\\])*?[^\s$\\])\$(?![\w$])/g;
+  const MATH_ENV_RE = /\\begin\{([A-Za-z]+\*?)\}[\s\S]*?\\end\{\1\}/g;
 
   function extractMath(src) {
     const items = [];
@@ -403,6 +404,10 @@
     });
     text = text.replace(MATH_INLINE_RE, function (_, prefix, c) {
       return prefix + store("\\(" + c + "\\)");
+    });
+    // Environment berdiri sendiri (mis. \begin{aligned}...\end{aligned}).
+    text = text.replace(MATH_ENV_RE, function (m) {
+      return store("\\[" + m + "\\]");
     });
     return { text: text, items: items };
   }
