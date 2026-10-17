@@ -39,9 +39,10 @@ Backblaze B2, dengan panel admin, pencarian, revisi, dan optimasi SEO/performa.
 
 Catatan adalah aplikasi catatan markdown satu-pengguna/tim kecil:
 
-- **Publik**: beranda daftar catatan, halaman detail dengan pembaca markdown,
-  daftar isi otomatis, tag, kategori, pencarian, feed RSS, sitemap, dan
-  Open Graph image yang digenerate otomatis.
+- **Publik**: beranda daftar catatan, halaman detail dengan pembaca markdown
+  (termasuk rumus LaTeX/`MathJax` yang dilayani sendiri), daftar isi otomatis,
+  tag, kategori, pencarian, feed RSS, sitemap, dan Open Graph image yang
+  digenerate otomatis.
 - **Admin**: login terlindungi rate-limit, editor markdown dengan toolbar,
   unggah gambar (tempel/seret), sampul catatan, kategori berwarna, riwayat
   revisi, dashboard, dan pengelolaan profil.
@@ -53,15 +54,16 @@ Catatan adalah aplikasi catatan markdown satu-pengguna/tim kecil:
 ### Publik
 
 - **Beranda** `/` — kartu catatan (sampul, badge sematan, waktu baca, jumlah
-  tampilan), paginasi (9/halaman), pencarian `?q=`, filter `?kategori=` dan
+  tampilan), paginasi (10/halaman), pencarian `?q=`, filter `?kategori=` dan
   `?tag=`; catatan tersemat diurutkan pertama.
 - **Halaman catatan** `/catatan/<slug>` — render markdown penuh (heading,
-  kode dengan tombol salin, tabel, gambar, blockquote), **daftar isi otomatis
-  (TOC) dari h2/h3 yang bisa dibuka/tutup** (state diingat di `localStorage`),
-  scroll-spy penanda bagian aktif, waktu baca, jumlah kata, jumlah tampilan
+  kode dengan tombol salin, tabel, gambar, blockquote, **rumus LaTeX**),
+  **daftar isi otomatis (TOC) dari h2/h3 yang bisa dibuka/tutup** (state
+  diingat di `localStorage`), scroll-spy penanda bagian aktif, waktu baca,
+  jumlah kata, jumlah tampilan
   (dihitung async tanpa memblokir render), catatan terkait & catatan lainnya,
-  bar bagikan (salin tautan, WhatsApp, X, Web Share API), tombol unduh `.md`,
-  dan mode cetak.
+  bar bagikan (salin tautan, WhatsApp, X/Facebook/Telegram, Web Share API),
+  tombol unduh `.md`, dan mode cetak.
 - **Tag** `/tag` (indeks semua tag) dan `/tag/<slug>` — slug di-URL-encode
   sehingga tag berspasi (`basic os`) tetap bisa dibuka.
 - **Kategori** `/kategori/<slug>` — halaman per kategori.
@@ -86,7 +88,8 @@ Catatan adalah aplikasi catatan markdown satu-pengguna/tim kecil:
 - **CRUD catatan** — buat/edit/hapus, status draf–terbit, sematan, sampul,
   tag, kategori, ekspor `.md`.
 - **Editor** — toolbar (tebal, miring, judul, tautan, gambar, kode, dll.),
-  pratinjau langsung, **autosave draf ke `localStorage`**
+  pratinjau langsung (termasuk typeset rumus via `window.typesetMath`),
+  **autosave draf ke `localStorage`**
   (`catatan-draft:<path>`), statistik kata/karakter/waktu baca.
 - **Unggah gambar** — tempel (Ctrl+V), seret-lepas, atau tombol unggah;
   batas ukuran `MAX_UPLOAD_SIZE` (default 5MB).
@@ -118,9 +121,11 @@ Catatan adalah aplikasi catatan markdown satu-pengguna/tim kecil:
 | Objek | Backblaze B2 (`b2sdk`) — bucket privat diproxy lewat aplikasi; fallback disk lokal |
 | Gambar | Pillow (OG image, **validasi konten unggahan**) |
 | Markdown/sanitasi | `markdown` + `nh3` (allowlist HTML) |
+| Rumus | MathJax v3.2.2 (build CHTML, **self-host** di `static/vendor/mathjax/` — tanpa CDN) |
+| Highlight kode | `Pygments` (ekstensi `codehilite`) |
 | Auth | `bcrypt` |
 | Frontend | HTML/Jinja2 + CSS vanilla + JavaScript vanilla (tanpa framework/build step) |
-| Format | `orjson` (JSON cepat), `python-multipart` |
+| Format & env | `orjson` (JSON cepat), `python-multipart`, `python-dotenv` (`.env`) |
 | Deploy | Lokal (Asteri ASGI worker) atau Vercel (`@vercel/python`) |
 
 ## Struktur Proyek
@@ -152,7 +157,8 @@ catatan/
 ├── templates/             # Template publik + templates/admin/
 ├── static/
 │   ├── css/style.css      # Seluruh gaya (termasuk mode gelap)
-│   ├── js/                # main.js, note-form.js, categories.js, theme-init.js, load-assets.js
+│   ├── js/                # main.js, note-form.js, categories.js, theme-init.js, load-assets.js, mathjax-config.js
+│   ├── vendor/mathjax/    # MathJax v3.2.2 self-host (tex-chtml.js + font CHTML)
 │   ├── fonts/             # DejaVu Sans (untuk OG image)
 │   └── favicon*           # Ikon situs
 ├── scripts/make_favicon.py  # Skrip pembuat varian favicon
@@ -215,14 +221,14 @@ Salin `.env.example` → `.env` (atau isi di dashboard Vercel). Semua variabel:
 | `SITE_TAGLINE` | — | `Tulis, simpan, dan bagikan catatan markdown` | Tagline |
 | `B2_APPLICATION_KEY_ID` | — | — | Kunci B2 (kosongkan = penyimpanan lokal) |
 | `B2_APPLICATION_KEY` | — | — | Rahasia kunci B2 |
-| `B2_BUCKET_NAME` | — | `catatan` | Nama bucket |
+| `B2_BUCKET_NAME` | — | — | Nama bucket (wajib bila B2 dipakai) |
 | `B2_BUCKET_ID` | — | — | ID bucket (opsional) |
 | `B2_ENDPOINT` | — | — | Endpoint B2 (opsional) |
 | `MAX_UPLOAD_SIZE` | — | `5242880` (5MB) | Batas ukuran unggahan (byte) |
 | `RATE_LIMIT_MAX` | — | `200` | Maks request global per jendela |
 | `RATE_LIMIT_WINDOW` | — | `60` | Jendela rate limit global (detik) |
 | `SESSION_COOKIE_SECURE` | — | `0` jika `DEV_MODE`, selainnya `1` | Atribut `Secure` cookie sesi (disesuaikan otomatis oleh middleware) |
-| `NOTES_PER_PAGE` | — | `9` | Catatan per halaman publik |
+| `NOTES_PER_PAGE` | — | `10` | Catatan per halaman publik |
 | `ADMIN_NOTES_PER_PAGE` | — | `15` | Catatan per halaman admin |
 | `PORT` | — | `8000` | Port (hanya saat `python3 app.py`) |
 
@@ -285,9 +291,13 @@ Salin `.env.example` → `.env` (atau isi di dashboard Vercel). Semua variabel:
 singkat) → guard auth/CSRF (admin) → handler → template Jinja / JSON.
 Sesi disimpan sebagai **cookie bertanda tangan** (bukan koleksi DB).
 
-**Render catatan**: markdown → HTML → sanitizer allowlist (server) →
-di halaman, konten dirender ulang/disempurnakan oleh JS (highlight kode,
-TOC, tombol salin) dengan sanitizer klien berlapis.
+**Render catatan** (`models/note.py`): CRLF diseragamkan → fence terindenasi
+diekstrak → rumus LaTeX (termasuk environment `\begin{…}`) diekstrak ke token
+agar `_`, `*`, `\` tidak diubah markdown → indentasi daftar dinormalkan →
+markdown (ekstensi `extra`, `fenced_code`, `tables`, `toc`, `sane_lists`,
+`codehilite`) → token rumus dikembalikan sebagai `\(…\)` / `\[…\]` → sanitizer
+allowlist (server). Di halaman, konten disempurnakan JS (highlight kode, TOC,
+tombol salin, typeset rumus via MathJax) dengan sanitizer klien berlapis.
 
 ## Keamanan
 
@@ -308,7 +318,8 @@ TOC, tombol salin) dengan sanitizer klien berlapis.
   HTTP lewat IP non-localhost (mis. akses LAN) supaya login tetap jalan — di
   HTTP polos atribut itu tidak memberi proteksi transport apa pun.
 - **XSS**: konten markdown melewati allowlist HTML (server `nh3` + parser
-  ketat di klien); tidak ada inline handler/script (CSP aman).
+  ketat di klien); tidak ada inline handler/script (CSP aman; `MathJax`
+  pun dilayani sendiri dari `static/vendor/`, bukan CDN).
 - **Injection**: semua query Mongo memakai parameter terstruktur; pencarian
   regex memakai `re.escape`; urutan sort selalu nilai internal.
 - **Unggah**: wajib login + CSRF, whitelist ekstensi (`.png .jpg .jpeg .gif
@@ -323,8 +334,8 @@ TOC, tombol salin) dengan sanitizer klien berlapis.
 
 ## Performa
 
-- **Kompresi GZip** aktif untuk HTML/JSON/CSS/JS (contoh: beranda 7 KB →
-  1,8 KB).
+- **Kompresi GZip** aktif untuk HTML/JSON/CSS/JS, min. 500 byte (contoh:
+  beranda ±25 KB → ±4,4 KB).
 - **Indeks MongoDB**: `slug` (unique), `(status, published_at)`,
   `(status, is_pinned, published_at)`, `(category_id, status)`, `tags`,
   teks berbobot `notes_text`, dan `note_revisions (note_id, saved_at)`.
@@ -360,18 +371,21 @@ mana pun** (guard `refs` lintas-catatan):
 
 ## Pengujian
 
-Pengujian otomatis dijalankan sebagai skrip terpisah (belum ter-commit ke
-repo) — status terakhir **semua lulus**:
+Pengujian dijalankan sebagai skrip Node/Python terpisah di luar repo (tidak
+di-commit, agar tak menambah dependensi build). Suite yang tersedia dan dipakai
+saat ini:
 
 | Suite | Cakupan | Hasil |
 |---|---|---|
-| `test_hl.js` | Highlight kode markdown | 27/27 |
-| `test_md.js` | Renderer markdown + sanitizer | 25/25 |
-| `test_editor.js` | Editor, unggah, autosave, audit media sesi | 25/25 |
-| `test_toc.js` | TOC, scroll-spy, buka/tutup + persistensi | 20/20 |
-| `test_media_purge.py` | E2E endpoint `/admin/media/hapus` | 14/14 |
-| `test_media_cleanup.py` | E2E cleanup saat edit/hapus/purge | 23/23 |
-| `test_hardening.py` | Index revisi, cookie Secure adaptif, validasi upload | 9/9 |
+| `test_md_math.js` | Renderer markdown klien: math LaTeX & environment, fence, tabel, daftar (`start`, bersarang, sesudah paragraf), CRLF, sanitizer inline | 39/39 |
+
+Logika server (render markdown, cleanup media, validasi unggah, cookie `Secure`
+adaptif) diverifikasi langsung terhadap server lokal. Suite ad-hoc sesi
+sebelumnya — `test_hl.js` (highlight kode 27/27), `test_md.js` (markdown +
+sanitizer 25/25), `test_editor.js` (editor/unggah/autosave 25/25),
+`test_toc.js` (TOC + scroll-spy 20/20), `test_media_purge.py` (14/14),
+`test_media_cleanup.py` (23/23), `test_hardening.py` (9/9) — tidak disimpan di
+repo sehingga sudah tidak dapat dijalankan ulang dari sini.
 
 ## Deploy ke Vercel
 
